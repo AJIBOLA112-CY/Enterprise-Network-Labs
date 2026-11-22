@@ -216,6 +216,7 @@ The ACL specifically restricts ICMP echo requests; it does not block every type 
 
 ## Troubleshooting Experience
 
+
 During implementation, the Sales PC initially failed to ping the simulated internet destination `8.8.8.8`.
 
 Troubleshooting included:
@@ -230,6 +231,39 @@ Troubleshooting included:
 After configuring NAT inside on the VLAN subinterfaces, Sales PC internet connectivity was successfully established.
 
 This demonstrated the importance of understanding the actual traffic path when troubleshooting NAT in a Router-on-a-Stick environment.
+
+### DHCP Failure Caused by Extended ACL
+
+**Problem:** After saving and reopening the Packet Tracer project, the Sales PCs were unable to obtain IP addresses through DHCP. PC0 received an APIPA address (`169.254.x.x`).
+
+**Investigation:**
+- Verified the Sales VLAN assignment on the access switch.
+- Checked the trunk configuration and confirmed VLAN 10 was active.
+- Verified the router subinterface and DHCP pool configuration.
+- Identified that Extended ACL 101 was applied inbound on the Sales subinterface.
+
+**Root Cause:** DHCP Discover packets initially use source IP address `0.0.0.0`. The original ACL permitted traffic from the Sales subnet (`192.168.10.0/26`) but did not explicitly permit DHCP client requests. These requests were therefore blocked by the ACL's implicit deny.
+
+**Solution:** Added a DHCP permit rule before the existing security rules:
+
+```cisco
+access-list 101 permit udp any eq 68 any eq 67
+```
+
+Restored ACL 101 on the Sales subinterface:
+
+```cisco
+interface gigabitEthernet0/2.10
+ip access-group 101 in
+```
+
+**Verification:**
+- Sales PC successfully renewed its DHCP lease.
+- Sales received the correct IP address, subnet mask, gateway and DNS server.
+- Sales-to-Management ICMP traffic remained blocked.
+- IT-to-Management and Management-to-Sales connectivity remained successful.
+
+**Lesson Learned:** Extended ACLs must account for essential network services such as DHCP. Rule order matters because traffic that does not match an explicit permit or deny rule is subject to the implicit deny at the end of the ACL.
 
 ## Verification and Testing
 
