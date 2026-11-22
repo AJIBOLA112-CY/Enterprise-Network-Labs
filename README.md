@@ -14,6 +14,7 @@ The network consists of:
 - 2 Cisco 2911 routers (Core Router and ISP Router)
 - 1 Cisco 2960 switch
 - 6 end-user PCs
+- ![Enterprise Network Topology](Screenshot%20(1022).png)
 
 ### Departmental Structure
 
